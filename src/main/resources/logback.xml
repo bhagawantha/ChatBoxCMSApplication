@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<appender name="fileAppender"
+		class="ch.qos.logback.core.rolling.RollingFileAppender">
+
+		<File>D:/ChatBox_App/chatbox_app.log</File>
+
+		<rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+			<param name="FileNamePattern" value="D:/ChatBox_App/chatbox_app.%i.log" />
+			<param name="MinIndex" value="1" />
+			<param name="MaxIndex" value="7" />
+		</rollingPolicy>
+
+		<triggeringPolicy
+			class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+			<param name="MaxFileSize" value="100MB" />
+		</triggeringPolicy>
+
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<pattern>
+				%d{yyyy.MM.dd HH:mm:ss.SSS} [%thread] %-5level %logger{20}
+				%X %msg%n
+			</pattern>
+		</encoder>
+	</appender>
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<layout class="ch.qos.logback.classic.PatternLayout">
+			<Pattern>
+				%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} -
+				%msg%n
+			</Pattern>
+		</layout>
+	</appender>
+	<logger name="com.chatbox" level="TRACE">
+		<appender-ref ref="fileAppender" />
+		<appender-ref ref="STDOUT" />
+	</logger>
+
+	<logger name="org.springframework.web" level="TRACE">
+		<appender-ref ref="fileAppender" />
+		<appender-ref ref="STDOUT" />
+	</logger>
+
+	<logger name="org.hibernate" level="TRACE">
+		<appender-ref ref="fileAppender" />
+		<appender-ref ref="STDOUT" />
+	</logger>
+</configuration>

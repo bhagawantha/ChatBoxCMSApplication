@@ -1,0 +1,410 @@
+package com.tms.adplanner.dbaccess.dao;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.easymock.EasyMock;
+import org.hibernate.HibernateException;
+import org.hibernate.Query;
+import org.hibernate.SessionFactory;
+import org.hibernate.classic.Session;
+import org.junit.Before;
+import org.junit.Test;
+
+import com.tms.adplanner.common.business.ConfigurationService;
+import com.tms.adplanner.common.dbaccess.entity.ApApplicationEntity;
+import com.tms.adplanner.common.dto.CartAssetDto;
+import com.tms.adplanner.common.dto.UserRoleDto;
+import com.tms.adplanner.common.exception.AdPlannerDataAccessException;
+import com.tms.adplanner.common.util.PlatformLoggerUtil;
+import com.tms.adplanner.dbaccess.entity.ApCartAssetEntity;
+import com.tms.adplanner.dbaccess.entity.ApUserCartEntity;
+import com.tms.adplanner.user.dbaccess.entity.ApUserEntity;
+
+/**
+ * 
+ * @author M1023278
+ *
+ */
+public class CartDaoImplTest {
+	 
+	
+	/**
+	 * CartDaoImpl reference object.
+	 */
+	CartDaoImpl cartDaoImpl;
+	/**
+	 * SessionFactory
+	 */
+	protected SessionFactory sessionFactory;
+	
+	/**
+	 * Session session
+	 */
+	protected Session session;    
+	
+	/**
+	 * Query query
+	 */
+	protected Query query = null;
+	
+	/**
+	 * Connection con
+	 */
+	protected Connection con = null;
+	
+	private ConfigurationService configurationService;
+	
+	/**
+	 * @throws java.lang.Exception
+	 */
+	@Before
+	public void setUp() throws Exception {
+		PlatformLoggerUtil.debug(this.getClass(),"setUp() :: Start");
+		cartDaoImpl = new CartDaoImpl();
+		this.sessionFactory = EasyMock.createMock(SessionFactory.class);
+		this.session = EasyMock.createMock(org.hibernate.classic.Session.class);
+		this.query = EasyMock.createMock(Query.class);
+		this.con = EasyMock.createMock(Connection.class);
+		configurationService = EasyMock.createMock(ConfigurationService.class);
+		cartDaoImpl.setSessionFactory(this.sessionFactory);
+		cartDaoImpl.setConfigurationService(configurationService);
+		EasyMock.expect(this.sessionFactory.openSession()).andReturn(this.session);
+		EasyMock.expect(this.session.getSessionFactory()).andReturn(this.sessionFactory);
+		PlatformLoggerUtil.debug(this.getClass(),"setUp() :: End");
+	}
+	/**
+	 * @throws Exception 
+	 * 
+	 */
+	@Test(expected=AdPlannerDataAccessException.class)
+	public void testSaveAssetIntoCartForException() throws Exception{
+		PlatformLoggerUtil.info(this.getClass(),"CartDaoImplTest:testSaveAssetIntoCart:Start");
+		EasyMock.expect(this.sessionFactory.openSession()).andReturn(this.session);
+		EasyMock.expect(this.session.getSessionFactory()).andReturn(this.sessionFactory);
+		EasyMock.expect(this.session.close()).andReturn(this.con);
+		
+		EasyMock.expect(this.session.getNamedQuery(EasyMock.isA(String.class))).andThrow(new HibernateException(""));
+		EasyMock.expect(this.query.setParameter(EasyMock.isA(String.class),EasyMock.isA(Integer.class))).andReturn(this.query);
+		EasyMock.expect(this.query.list()).andReturn(createapUserEntityList());
+		
+		EasyMock.expect(this.session.getNamedQuery(EasyMock.isA(String.class))).andReturn(this.query);
+		EasyMock.expect(this.query.setParameter(EasyMock.isA(String.class),EasyMock.isA(String.class))).andReturn(this.query);
+		EasyMock.expect(this.query.list()).andReturn(createapUserEntityList());
+		
+		
+		EasyMock.expect(this.session.getNamedQuery(EasyMock.isA(String.class))).andReturn(this.query);
+		EasyMock.expect(this.query.setParameter(EasyMock.isA(String.class),EasyMock.isA(Integer.class))).andReturn(this.query);
+		EasyMock.expect(this.query.list()).andReturn(createapUserEntityList()); 
+		
+		
+		EasyMock.expect(this.session.load(ApUserCartEntity.class, 1)).andReturn(createApUserCartEntity());
+		EasyMock.expect(this.session.save(EasyMock.isA(ApCartAssetEntity.class))).andReturn(1);
+		
+		EasyMock.expect(this.session.save(EasyMock.isA(ApUserCartEntity.class))).andReturn(1);
+		EasyMock.expect(this.session.load(ApUserCartEntity.class, 1)).andReturn(createApUserCartEntity());
+		
+		EasyMock.expect(this.session.save(EasyMock.isA(ApCartAssetEntity.class))).andReturn(1);
+		this.session.flush();
+		EasyMock.expect(this.session.connection()).andReturn(this.con);
+		this.con.commit();
+		
+		EasyMock.replay(this.con);
+		EasyMock.replay(this.query);
+		EasyMock.replay(this.session);
+		EasyMock.replay(this.sessionFactory);
+		cartDaoImpl.saveAssetIntoCart(createCartAssetDto(), createUserRoleDto());
+		PlatformLoggerUtil.info(this.getClass(),"CartDaoImplTest:testSaveAssetIntoCart:End");
+	}
+	private UserRoleDto createUserRoleDto() {
+		UserRoleDto userRoleDto = new UserRoleDto();
+		userRoleDto.setAgency("agency");
+		userRoleDto.setCountry("country");
+		userRoleDto.setDealerCode(1);
+		userRoleDto.setEmailId("emailId");
+//		userRoleDto.setRegion("region");
+		userRoleDto.setState("state");
+//		userRoleDto.setTda("tda");
+		userRoleDto.setUserFirstName("userFirstName");
+		return userRoleDto;
+	}
+	private CartAssetDto createCartAssetDto() {
+		CartAssetDto cartAssetDto = new CartAssetDto();
+		cartAssetDto.setAssetId(1);
+		cartAssetDto.setAssetTitle("assetTitle");
+		cartAssetDto.setCartAssetId(2);
+		cartAssetDto.setCartId(1);
+		cartAssetDto.setThumbNailMediaId(1);
+		return cartAssetDto;
+	}
+	private ApUserCartEntity createApUserCartEntity() {
+		ApUserCartEntity apUserCartEntity = new ApUserCartEntity();
+		apUserCartEntity.setCartId(1);
+		apUserCartEntity.setCartStatusId(1);
+		apUserCartEntity.setCreatedTimestamp(new Date());
+		apUserCartEntity.setModifiedTimestamp(new Date());
+		apUserCartEntity.setUserId(2);
+		return apUserCartEntity;
+	}
+	private List<ApUserEntity> createapUserEntityList() {
+		List<ApUserEntity>apUserEntityList = new ArrayList<ApUserEntity>();
+		ApUserEntity apUserEntity = new ApUserEntity();
+		apUserEntity.setEmail("toyota@gmail.com");
+		apUserEntity.setFirstName("firstName");
+		apUserEntity.setLastName("lastName");
+		apUserEntity.setUserId(3);
+		apUserEntityList.add(apUserEntity);
+		return apUserEntityList;
+	}
+	/**
+	 * @throws Exception 
+	 * 
+	 */
+	@Test
+	public void testSaveAssetIntoCart() throws Exception{
+		PlatformLoggerUtil.info(this.getClass(),"CartDaoImplTest:testSaveAssetIntoCart:Start");
+		EasyMock.expect(this.sessionFactory.openSession()).andReturn(this.session);
+		EasyMock.expect(this.session.getSessionFactory()).andReturn(this.sessionFactory);
+		EasyMock.expect(this.session.close()).andReturn(this.con);
+		
+		EasyMock.expect(this.session.getNamedQuery(EasyMock.isA(String.class))).andReturn(this.query);
+		EasyMock.expect(this.query.setParameter(EasyMock.isA(String.class),EasyMock.isA(Integer.class))).andReturn(this.query);
+		EasyMock.expect(this.query.list()).andReturn(createapUserEntityList());
+		
+		EasyMock.expect(this.session.getNamedQuery(EasyMock.isA(String.class))).andReturn(this.query);
+		EasyMock.expect(this.query.setParameter(EasyMock.isA(String.class),EasyMock.isA(String.class))).andReturn(this.query);
+		EasyMock.expect(this.query.list()).andReturn(createApUserCartEntityList());
+		
+		
+		EasyMock.expect(this.session.getNamedQuery(EasyMock.isA(String.class))).andReturn(this.query);
+		EasyMock.expect(this.query.setParameter(EasyMock.isA(String.class),EasyMock.isA(Integer.class))).andReturn(this.query);
+		EasyMock.expect(this.query.list()).andReturn(createapUserEntityList()); 
+		
+		
+		EasyMock.expect(this.session.load(ApUserCartEntity.class, 1)).andReturn(createApUserCartEntity());
+		EasyMock.expect(this.session.save(EasyMock.isA(ApCartAssetEntity.class))).andReturn(1);
+		
+		EasyMock.expect(this.session.save(EasyMock.isA(ApUserCartEntity.class))).andReturn(1);
+		EasyMock.expect(this.session.load(ApUserCartEntity.class, 1)).andReturn(createApUserCartEntity());
+		
+		EasyMock.expect(this.session.save(EasyMock.isA(ApCartAssetEntity.class))).andReturn(1);
+		
+		EasyMock.expect(this.session.getNamedQuery(EasyMock.isA(String.class))).andReturn(this.query);
+		EasyMock.expect(this.query.setParameter(EasyMock.isA(String.class),EasyMock.isA(Integer.class))).andReturn(this.query);
+		EasyMock.expect(this.query.list()).andReturn(createApCartAssetEntityList()); 
+		this.session.flush();
+		EasyMock.expect(this.session.connection()).andReturn(this.con);
+		this.con.commit();
+		ApApplicationEntity appEntity = new ApApplicationEntity();
+		appEntity.setApplicationName("aaa");
+		EasyMock.expect(this.query.setParameter(EasyMock.isA(String.class),EasyMock.isA(Integer.class))).andReturn(this.query);
+		
+		EasyMock.expect(configurationService.getApplicationId()).andReturn(1).times(3);
+		EasyMock.expect(configurationService.getApplicationEntity(1)).andReturn(appEntity).times(1);
+		
+		EasyMock.replay(this.con);
+		EasyMock.replay(this.query);
+		EasyMock.replay(this.session);
+		EasyMock.replay(this.sessionFactory);
+		EasyMock.replay(this.configurationService);
+		cartDaoImpl.saveAssetIntoCart(createCartAssetDto(), createUserRoleDto());
+		PlatformLoggerUtil.info(this.getClass(),"CartDaoImplTest:testSaveAssetIntoCart:End");
+	}
+	/**
+	 * @throws SQLException 
+	 * @throws AdPlannerDataAccessException 
+	 * 
+	 */
+	@Test
+	public void testRemoveAssetFromCart() throws SQLException, AdPlannerDataAccessException{
+		PlatformLoggerUtil.info(this.getClass(),"CartDaoImplTest:testSaveAssetIntoCart:Start");
+		EasyMock.expect(this.sessionFactory.openSession()).andReturn(this.session);
+		EasyMock.expect(this.session.getSessionFactory()).andReturn(this.sessionFactory);
+		EasyMock.expect(this.session.close()).andReturn(this.con);
+		
+		EasyMock.expect(this.session.getNamedQuery(EasyMock.isA(String.class))).andReturn(this.query);
+		EasyMock.expect(this.query.executeUpdate()).andReturn(1);
+		EasyMock.expect(this.query.list()).andReturn(createApCartAssetEntityList()); 
+		
+		EasyMock.expect(this.session.getNamedQuery(EasyMock.isA(String.class))).andReturn(this.query);
+		EasyMock.expect(this.query.setParameter(EasyMock.isA(String.class),EasyMock.isA(Integer.class))).andReturn(this.query);
+		EasyMock.expect(this.query.list()).andReturn(createApCartAssetEntityList()); 
+		this.session.flush();
+		EasyMock.expect(this.session.connection()).andReturn(this.con);
+		this.con.commit();
+		
+		EasyMock.replay(this.con);
+		EasyMock.replay(this.query);
+		EasyMock.replay(this.session);
+		EasyMock.replay(this.sessionFactory);
+		cartDaoImpl.removeAssetFromCart(1,2, createUserRoleDto());
+		
+	}
+	private List<ApCartAssetEntity> createApCartAssetEntityList() {
+		List<ApCartAssetEntity>apCartAssetEntityList = new ArrayList<ApCartAssetEntity>();
+		ApUserCartEntity apUserCartEntity = new ApUserCartEntity();
+		apUserCartEntity.setCartId(1);
+		apUserCartEntity.setCartStatusId(2);
+		apUserCartEntity.setUserId(1);
+		ApCartAssetEntity apCartAssetEntity = new ApCartAssetEntity();
+		apCartAssetEntity.setAssetId(1);
+		apCartAssetEntity.setAssetTitle("assetTitle");
+		apCartAssetEntity.setCartAssetId(2);
+		apCartAssetEntity.setCreatedTimestamp(new Date());
+		apCartAssetEntity.setModifiedTimestamp(new Date());
+		apCartAssetEntity.setThumbnailUri(1);
+		apCartAssetEntity.setApUserCartEntity(apUserCartEntity);
+		apCartAssetEntityList.add(apCartAssetEntity);
+		return apCartAssetEntityList;
+	}
+	@Test(expected=Exception.class)
+	public void testGetAllAssets()throws SQLException, AdPlannerDataAccessException{
+		PlatformLoggerUtil.info(this.getClass(), "CartDaoImplTest:testGetAllAssets:Start");
+		EasyMock.expect(this.sessionFactory.openSession()).andReturn(this.session);
+		EasyMock.expect(this.session.getSessionFactory()).andReturn(this.sessionFactory);
+		EasyMock.expect(this.session.close()).andReturn(this.con);
+		
+		EasyMock.expect(this.session.getNamedQuery(EasyMock.isA(String.class))).andReturn(this.query);
+		EasyMock.expect(this.query.setParameter(EasyMock.isA(String.class),EasyMock.isA(String.class))).andReturn(this.query);
+		EasyMock.expect(this.query.list()).andReturn(createapUserEntityList()); 
+		
+		EasyMock.expect(this.session.getNamedQuery(EasyMock.isA(String.class))).andReturn(this.query);
+		EasyMock.expect(this.query.setParameter(EasyMock.isA(String.class),EasyMock.isA(Integer.class))).andReturn(this.query);
+		EasyMock.expect(this.query.list()).andReturn(createApUserCartEntityList()); 
+		
+		EasyMock.expect(this.session.getNamedQuery(EasyMock.isA(String.class))).andReturn(this.query);
+		EasyMock.expect(this.query.setParameter(EasyMock.isA(String.class),EasyMock.isA(Integer.class))).andReturn(this.query);
+		EasyMock.expect(this.query.list()).andReturn(createApCartAssetEntityList()); 
+		this.session.flush();
+		EasyMock.expect(this.session.connection()).andReturn(this.con);
+		this.con.commit();
+		
+		EasyMock.replay(this.con);
+		EasyMock.replay(this.query);
+		EasyMock.replay(this.session);
+		EasyMock.replay(this.sessionFactory);
+		cartDaoImpl.getAllAssets(createUserRoleDto());
+		
+		
+	}
+	private List<ApUserCartEntity> createApUserCartEntityList() {
+		List<ApUserCartEntity>apUserCartEntityList = new ArrayList<ApUserCartEntity>();
+		ApUserCartEntity apUserCartEntity = new ApUserCartEntity();
+		apUserCartEntity.setCartId(1);
+		apUserCartEntity.setCartStatusId(1);
+		apUserCartEntity.setCreatedTimestamp(new Date());
+		apUserCartEntity.setModifiedTimestamp(new Date());
+		apUserCartEntity.setUserId(3);
+		apUserCartEntityList.add(apUserCartEntity);
+		return apUserCartEntityList;
+	}
+	@Test
+	public void testCheckCartSize() throws Exception{
+		EasyMock.expect(this.sessionFactory.openSession()).andReturn(this.session);
+		EasyMock.expect(this.session.getSessionFactory()).andReturn(this.sessionFactory);
+		EasyMock.expect(this.session.close()).andReturn(this.con);
+		
+		
+		EasyMock.expect(this.session.getNamedQuery(EasyMock.isA(String.class))).andReturn(this.query);
+		EasyMock.expect(this.query.setParameter(EasyMock.isA(String.class),EasyMock.isA(String.class))).andReturn(this.query);
+		EasyMock.expect(this.query.list()).andReturn(createApUserEntityList());
+		
+		EasyMock.expect(this.session.getNamedQuery(EasyMock.isA(String.class))).andReturn(this.query);
+		EasyMock.expect(this.query.setParameter(EasyMock.isA(String.class),EasyMock.isA(Integer.class))).andReturn(this.query);
+		EasyMock.expect(this.query.list()).andReturn(createApUserCartEntityList());
+		
+		EasyMock.expect(this.session.getNamedQuery(EasyMock.isA(String.class))).andReturn(this.query);
+		EasyMock.expect(this.query.setParameter(EasyMock.isA(String.class),EasyMock.isA(Integer.class))).andReturn(this.query);
+		EasyMock.expect(this.query.setParameter(EasyMock.isA(String.class),EasyMock.isA(Integer.class))).andReturn(this.query);
+		EasyMock.expect(this.query.list()).andReturn(createApCartAssetEntityList()); 
+		this.session.flush();
+		EasyMock.expect(this.session.connection()).andReturn(this.con);
+		this.con.commit();
+		
+		EasyMock.expect(configurationService.getApplicationId()).andReturn(1).times(3);
+		
+		EasyMock.replay(this.con);
+		EasyMock.replay(this.query);
+		EasyMock.replay(this.session);
+		EasyMock.replay(this.sessionFactory);
+		EasyMock.replay(this.configurationService);
+		cartDaoImpl.checkCartSize(createUserRoleDto());
+	}
+	private List<ApUserEntity> createApUserEntityList() {
+		List<ApUserEntity>apUserEntityList = new ArrayList<ApUserEntity>();
+		ApUserEntity apUserEntity = new ApUserEntity();
+		apUserEntity.setEmail("email");
+		apUserEntity.setFirstName("firstName");
+		apUserEntity.setUserId(2);
+		apUserEntityList.add(apUserEntity);
+		return apUserEntityList;
+	}
+	/**
+	 * @throws SQLException 
+	 * @throws AdPlannerDataAccessException 
+	 * 
+	 */
+
+	@Test(expected=AdPlannerDataAccessException.class)
+	public void testGetAllAssetsForException() throws SQLException, AdPlannerDataAccessException{
+		PlatformLoggerUtil.info(this.getClass(),"CartDaoImplTest:testGetAllAssets:Start");
+		EasyMock.expect(this.sessionFactory.openSession()).andReturn(this.session);
+		EasyMock.expect(this.session.getSessionFactory()).andReturn(this.sessionFactory);
+		EasyMock.expect(this.session.close()).andReturn(this.con);
+		
+		EasyMock.expect(this.session.getNamedQuery(EasyMock.isA(String.class))).andThrow(new HibernateException(""));
+		EasyMock.expect(this.query.setParameter(EasyMock.isA(String.class),EasyMock.isA(String.class))).andReturn(this.query);
+		EasyMock.expect(this.query.list()).andReturn(createapUserEntityList()); 
+		
+		EasyMock.expect(this.session.getNamedQuery(EasyMock.isA(String.class))).andReturn(this.query);
+		EasyMock.expect(this.query.setParameter(EasyMock.isA(String.class),EasyMock.isA(Integer.class))).andReturn(this.query);
+		EasyMock.expect(this.query.list()).andReturn(createApUserCartEntityList()); 
+		
+		EasyMock.expect(this.session.getNamedQuery(EasyMock.isA(String.class))).andReturn(this.query);
+		EasyMock.expect(this.query.setParameter(EasyMock.isA(String.class),EasyMock.isA(Integer.class))).andReturn(this.query);
+		EasyMock.expect(this.query.list()).andReturn(createApCartAssetEntityList()); 
+		this.session.flush();
+		EasyMock.expect(this.session.connection()).andReturn(this.con);
+		this.con.commit();
+		
+		EasyMock.replay(this.con);
+		EasyMock.replay(this.query);
+		EasyMock.replay(this.session);
+		EasyMock.replay(this.sessionFactory);
+		cartDaoImpl.getAllAssets(createUserRoleDto());
+		
+		
+	}
+	@Test(expected=AdPlannerDataAccessException.class)
+	public void testCheckCartSizeForException() throws AdPlannerDataAccessException, SQLException{
+		EasyMock.expect(this.sessionFactory.openSession()).andReturn(this.session);
+		EasyMock.expect(this.session.getSessionFactory()).andReturn(this.sessionFactory);
+		EasyMock.expect(this.session.close()).andReturn(this.con);
+		
+		
+		EasyMock.expect(this.session.getNamedQuery(EasyMock.isA(String.class))).andThrow(new HibernateException(""));
+		EasyMock.expect(this.query.setParameter(EasyMock.isA(String.class),EasyMock.isA(String.class))).andReturn(this.query);
+		EasyMock.expect(this.query.list()).andReturn(createApUserEntityList());
+		
+		EasyMock.expect(this.session.getNamedQuery(EasyMock.isA(String.class))).andReturn(this.query);
+		EasyMock.expect(this.query.setParameter(EasyMock.isA(String.class),EasyMock.isA(Integer.class))).andReturn(this.query);
+		EasyMock.expect(this.query.list()).andReturn(createApUserCartEntityList());
+		
+		EasyMock.expect(this.session.getNamedQuery(EasyMock.isA(String.class))).andReturn(this.query);
+		EasyMock.expect(this.query.setParameter(EasyMock.isA(String.class),EasyMock.isA(Integer.class))).andReturn(this.query);
+		EasyMock.expect(this.query.list()).andReturn(createApCartAssetEntityList()); 
+		this.session.flush();
+		EasyMock.expect(this.session.connection()).andReturn(this.con);
+		this.con.commit();
+		
+		EasyMock.replay(this.con);
+		EasyMock.replay(this.query);
+		EasyMock.replay(this.session);
+		EasyMock.replay(this.sessionFactory);
+		cartDaoImpl.checkCartSize(createUserRoleDto());
+	}
+	
+}
